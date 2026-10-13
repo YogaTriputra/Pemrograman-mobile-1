@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'info_row.dart';
 
 class ProfileInfo extends StatelessWidget {
-  final String name;
-  final String nim;
+  final String? name;
+  final String? nim;
   final String programStudi;
   final String email;
   final String lokasi;
 
   const ProfileInfo({
     super.key,
-    required this.name,
-    required this.nim,
+    this.name,
+    this.nim,
     required this.programStudi,
     required this.email,
     required this.lokasi,
@@ -25,23 +25,27 @@ class ProfileInfo extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+            if (name != null) ...[
+              Text(
+                name!,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'NIM: $nim',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
+              const SizedBox(height: 8),
+            ],
+            if (nim != null) ...[
+              Text(
+                'NIM: $nim',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
+            ],
             const Divider(),
             const SizedBox(height: 16),
             InfoRow(icon: Icons.school, label: programStudi),
