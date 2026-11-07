@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../utils/form_validators.dart';
 import '../widgets/custom_text_field.dart';
@@ -79,7 +80,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Future<void> _submitForm() async {
     if (_isLoading) return;
     final valid = _formKey.currentState!.validate();
-    if (!valid || !_agreed) return;
+    if (!valid) return;
     FocusScope.of(context).unfocus();
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
@@ -202,6 +203,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       hint: '10–13 digit angka',
                       prefixIcon: Icons.phone,
                       keyboardType: TextInputType.phone,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(13),
+                      ],
                       validator: FormValidators.phone,
                       enabled: !_isLoading,
                     ),
