@@ -1,155 +1,142 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:form_registrasi/main.dart';
-import 'package:form_registrasi/utils/form_validators.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:state_preferences/main.dart';
+import 'package:state_preferences/models/user.dart';
+import 'package:state_preferences/providers/user_change_notifier.dart';
+import 'package:state_preferences/providers/user_provider.dart';
 
 void main() {
-  group('Validasi input', () {
-    test('Nama wajib diisi dan minimal tiga karakter', () {
-      expect(FormValidators.name('  '), isNotNull);
-      expect(FormValidators.name('Al'), isNotNull);
-      expect(FormValidators.name('Alya'), isNull);
-    });
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
-    test('Email menolak format salah dan spasi di dalam alamat', () {
-      for (final email in ['', 'alamat', 'a@b', 'a b@c.com', 'a@b.com@c']) {
-        expect(FormValidators.email(email), isNotNull);
-      }
-      expect(FormValidators.email(' alya@example.com '), isNull);
-    });
-
-    test('Telepon hanya angka dengan panjang 10 sampai 13 digit', () {
-      for (final phone in ['', '08123abc45', '123456789', '12345678901234']) {
-        expect(FormValidators.phone(phone), isNotNull);
-      }
-      expect(FormValidators.phone('0812345678'), isNull);
-      expect(FormValidators.phone('0812345678901'), isNull);
-    });
-
-    test('Password wajib, panjang, kapital, angka dan konfirmasi', () {
-      expect(FormValidators.password(''), 'Password wajib diisi');
-      expect(FormValidators.password('Abc12'), 'Password minimal 8 karakter');
-      expect(
-        FormValidators.password('abcdefgh1'),
-        'Password harus mengandung huruf kapital',
-      );
-      expect(
-        FormValidators.password('Abcdefgh'),
-        'Password harus mengandung angka',
-      );
-      expect(FormValidators.password('Abcdefg1'), isNull);
-      expect(FormValidators.confirmPassword('', 'Abcdefg1'), isNotNull);
-      expect(FormValidators.confirmPassword('beda', 'Abcdefg1'), isNotNull);
-      expect(FormValidators.confirmPassword('Abcdefg1', 'Abcdefg1'), isNull);
-    });
-
-    test('Kekuatan password sesuai kriteria', () {
-      expect(FormValidators.passwordStrength(''), 0);
-      expect(FormValidators.passwordStrength('Ab1!'), 1);
-      expect(FormValidators.passwordStrength('abcdefgh'), 1);
-      expect(FormValidators.passwordStrength('abcdefg1'), 2);
-      expect(FormValidators.passwordStrength('Abcdefg1!'), 3);
-    });
+  test('Model User sesuai modul', () {
+    final user = User(name: 'Budi', email: 'budi@example.com');
+    final copy = User.fromMap(user.toMap()).copyWith(isLoggedIn: true);
+    expect(copy.name, 'Budi');
+    expect(copy.email, user.email);
+    expect(copy.isLoggedIn, isTrue);
   });
 
-  Future<void> openForm(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(900, 1800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  for (final providerExercise in [false, true]) {
+    testWidgets('Profil dan latihan dengan Provider: $providerExercise', (
+      tester,
+    ) async {
+      Future<void> openApp() async {
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpWidget(
+          providerExercise
+              ? const ProviderExerciseWrapper(child: PreferencesApp())
+              : const MyApp(),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      await openApp();
+      expect(find.text('Selamat datang, Tamu!'), findsOneWidget);
+      expect(find.text('Jumlah kunjungan: 1'), findsOneWidget);
+      await tester.tap(find.byTooltip('Ubah Tema'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+        ThemeMode.dark,
+      );
+      await tester.tap(find.text('Login / Daftar'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).at(0), 'Budi');
+      await tester.enterText(
+        find.byType(TextFormField).at(1),
+        'budi@example.com',
+      );
+      await tester.ensureVisible(find.text('Simpan Profil'));
+      await tester.tap(find.text('Simpan Profil'));
+      await tester.pumpAndSettle();
+      expect(find.text('Profil berhasil disimpan'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(TextField).last);
+      await tester.enterText(find.byType(TextField).last, 'Membaca');
+      await tester.ensureVisible(find.text('Tambah favorit'));
+      await tester.tap(find.text('Tambah favorit'));
+      await tester.pumpAndSettle();
+      expect(find.text('Membaca'), findsOneWidget);
+      await openApp();
+      expect(find.text('Selamat datang, Budi!'), findsOneWidget);
+      expect(find.text('Jumlah kunjungan: 2'), findsOneWidget);
+      expect(
+        tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+        ThemeMode.dark,
+      );
+      await tester.tap(find.text('Lihat Profil'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Membaca'));
+      expect(find.text('Membaca'), findsOneWidget);
+      await tester.tap(find.byTooltip('Hapus Membaca'));
+      await tester.pumpAndSettle();
+      expect(find.text('Membaca'), findsNothing);
+      await tester.tap(find.byTooltip('Logout'));
+      await tester.pumpAndSettle();
+      expect(find.text('Apakah Anda yakin ingin logout?'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TextButton, 'Logout'));
+      await tester.pumpAndSettle();
+      expect(find.text('Selamat datang, Tamu!'), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('user_email'), 'budi@example.com');
+      expect(prefs.getString('user_name'), isNull);
+      expect(prefs.getBool('is_logged_in'), isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('Validasi keamanan pada saveProfile', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'registered_emails': ['used@example.com'],
+    });
     await tester.pumpWidget(const MyApp());
-  }
-
-  Future<void> fillValidForm(WidgetTester tester) async {
-    final fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(0), 'Alya Mahasiswa');
-    await tester.enterText(fields.at(1), 'alya@example.com');
-    await tester.enterText(fields.at(2), '081234567890');
-    await tester.tap(fields.at(3));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Pilih').last);
+    await tester.tap(find.text('Login / Daftar'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Perempuan').last);
-    await tester.pumpAndSettle();
-    await tester.enterText(fields.at(4), 'Password123!');
-    await tester.enterText(fields.at(5), 'Password123!');
-    await tester.tap(find.byType(CheckboxListTile));
-    await tester.pump();
-  }
-
-  testWidgets('Submit kosong menampilkan semua error required', (tester) async {
-    await openForm(tester);
-    await tester.tap(find.text('Daftar'));
-    await tester.pump();
-    for (final message in [
-      'Nama wajib diisi',
-      'Email wajib diisi',
-      'Nomor telepon wajib diisi',
-      'Tanggal lahir wajib diisi',
-      'Jenis kelamin wajib dipilih',
-      'Password wajib diisi',
-      'Konfirmasi password wajib diisi',
-      'Anda wajib menyetujui syarat dan ketentuan',
-    ]) {
-      expect(find.text(message), findsOneWidget);
-    }
-  });
-
-  testWidgets('Registrasi sukses, loading, dan reset seluruh form', (
-    tester,
-  ) async {
-    await openForm(tester);
-    await fillValidForm(tester);
-    expect(find.text('Kekuatan password: Kuat'), findsOneWidget);
-    await tester.tap(find.text('Daftar'));
-    await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(
-      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
-      isNull,
+    await tester.enterText(find.byType(TextFormField).at(0), '<script>');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'used@example.com',
     );
-    await tester.pump(const Duration(seconds: 2));
+    await tester.ensureVisible(find.text('Simpan Profil'));
+    await tester.tap(find.text('Simpan Profil'));
     await tester.pumpAndSettle();
-    expect(find.text('Registrasi Berhasil'), findsOneWidget);
-    await tester.tap(find.text('OK'));
+    expect(find.text('Nama mengandung karakter berbahaya.'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
-    for (final field in tester.widgetList<TextFormField>(
-      find.byType(TextFormField),
-    )) {
-      expect(field.controller!.text, isEmpty);
-    }
+    await tester.enterText(find.byType(TextFormField).at(0), 'Budi');
+    await tester.tap(find.text('Simpan Profil'));
+    await tester.pumpAndSettle();
     expect(
-      tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
-      isFalse,
+      find.text('Email sudah digunakan pada profil simulasi lain.'),
+      findsOneWidget,
     );
-    expect(find.text('Kekuatan password: Belum diisi'), findsOneWidget);
-    expect(find.text('Perempuan'), findsNothing);
-    expect(find.text('Nama wajib diisi'), findsNothing);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('user_name'), isNull);
   });
 
-  testWidgets('Konfirmasi divalidasi ulang saat password berubah', (
-    tester,
-  ) async {
-    await openForm(tester);
-    final fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(4), 'Password123');
-    await tester.enterText(fields.at(5), 'Password123');
-    await tester.enterText(fields.at(4), 'Password456');
-    await tester.pump();
-    expect(find.text('Password tidak cocok'), findsOneWidget);
-  });
-
-  testWidgets('Aman jika halaman ditutup ketika registrasi berjalan', (
-    tester,
-  ) async {
-    await openForm(tester);
-    await fillValidForm(tester);
-    await tester.tap(find.text('Daftar'));
-    await tester.pump();
-    await tester.pumpWidget(const MaterialApp(home: SizedBox()));
-    await tester.pump(const Duration(seconds: 3));
-    expect(tester.takeException(), isNull);
+  test('updateShouldNotify memeriksa state', () {
+    Future<void> action() async {}
+    Future<void> itemAction(String value) async {}
+    Future<void> update(User user) async {}
+    final user = User(name: '', email: '');
+    final favorites = <String>[];
+    UserProvider scope(bool dark) => UserProvider(
+      user: user,
+      updateUser: update,
+      logout: action,
+      isLoading: false,
+      isDarkMode: dark,
+      visitCount: 1,
+      favorites: favorites,
+      toggleTheme: action,
+      addFavorite: itemAction,
+      removeFavorite: itemAction,
+      child: const SizedBox(),
+    );
+    expect(scope(false).updateShouldNotify(scope(false)), isFalse);
+    expect(scope(true).updateShouldNotify(scope(false)), isTrue);
   });
 }
