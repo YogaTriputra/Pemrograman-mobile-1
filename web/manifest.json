@@ -1,6 +1,6 @@
 {
-    "name": "form_registrasi",
-    "short_name": "form_registrasi",
+    "name": "state_preferences",
+    "short_name": "state_preferences",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
