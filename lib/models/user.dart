@@ -1,27 +1,50 @@
 class User {
+  const User({
+    required this.id,
+    required this.name,
+    required this.username,
+    required this.email,
+    required this.phone,
+    required this.website,
+    required this.companyName,
+  });
+
+  final int id;
   final String name;
+  final String username;
   final String email;
-  final bool isLoggedIn;
+  final String phone;
+  final String website;
+  final String companyName;
 
-  User({required this.name, required this.email, this.isLoggedIn = false});
-
-  Map<String, dynamic> toMap() {
-    return {'name': name, 'email': email, 'isLoggedIn': isLoggedIn};
+  String get initial {
+    final trimmed = name.trim();
+    return trimmed.isEmpty
+        ? '?'
+        : String.fromCharCode(trimmed.runes.first).toUpperCase();
   }
 
-  factory User.fromMap(Map<String, dynamic> map) {
-    return User(
-      name: map['name'] ?? '',
-      email: map['email'] ?? '',
-      isLoggedIn: map['isLoggedIn'] ?? false,
-    );
-  }
+  factory User.fromJson(Map<String, dynamic> json) {
+    final company = json['company'];
+    if (json['id'] is! int ||
+        json['name'] is! String ||
+        json['username'] is! String ||
+        json['email'] is! String ||
+        json['phone'] is! String ||
+        json['website'] is! String ||
+        company is! Map<String, dynamic> ||
+        company['name'] is! String) {
+      throw const FormatException('Data pengguna tidak valid.');
+    }
 
-  User copyWith({String? name, String? email, bool? isLoggedIn}) {
     return User(
-      name: name ?? this.name,
-      email: email ?? this.email,
-      isLoggedIn: isLoggedIn ?? this.isLoggedIn,
+      id: json['id'] as int,
+      name: json['name'] as String,
+      username: json['username'] as String,
+      email: json['email'] as String,
+      phone: json['phone'] as String,
+      website: json['website'] as String,
+      companyName: company['name'] as String,
     );
   }
 }
