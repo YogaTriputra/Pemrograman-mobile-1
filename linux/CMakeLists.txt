@@ -4,10 +4,10 @@ project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "state_preferences")
+set(BINARY_NAME "secure_http")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "com.example.state_preferences")
+set(APPLICATION_ID "com.example.secure_http")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -73,6 +73,12 @@ set_target_properties(${BINARY_NAME}
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
+
+if(TARGET flutter_secure_storage_linux_plugin AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(flutter_secure_storage_linux_plugin PRIVATE
+    -Wno-error=deprecated-literal-operator
+  )
+endif()
 
 
 # === Installation ===
