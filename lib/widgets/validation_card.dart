@@ -14,6 +14,8 @@ class _ValidationCardState extends State<ValidationCard> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _urlController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _hidePassword = true;
   String? _preview;
 
   void _submit() {
@@ -29,6 +31,7 @@ class _ValidationCardState extends State<ValidationCard> {
     _nameController.dispose();
     _phoneController.dispose();
     _urlController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -70,6 +73,27 @@ class _ValidationCardState extends State<ValidationCard> {
                 decoration: const InputDecoration(labelText: 'URL'),
                 keyboardType: TextInputType.url,
                 validator: Validators.validateUrl,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: _hidePassword,
+                autocorrect: false,
+                enableSuggestions: false,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  suffixIcon: IconButton(
+                    tooltip: _hidePassword
+                        ? 'Tampilkan password'
+                        : 'Sembunyikan password',
+                    onPressed: () =>
+                        setState(() => _hidePassword = !_hidePassword),
+                    icon: Icon(
+                      _hidePassword ? Icons.visibility : Icons.visibility_off,
+                    ),
+                  ),
+                ),
+                validator: Validators.validatePassword,
               ),
               const SizedBox(height: 16),
               ElevatedButton(

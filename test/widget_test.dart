@@ -33,6 +33,29 @@ void main() {
     expect(find.textContaining('secret'), findsNothing);
   });
 
+  testWidgets('Validasi input menampilkan dan memvalidasi password', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Validasi & Sanitasi Input'));
+    await tester.pumpAndSettle();
+
+    final passwordField = find.byType(TextFormField).last;
+    await tester.ensureVisible(passwordField);
+    await tester.enterText(passwordField, 'short');
+    await tester.ensureVisible(find.text('Validasi Input'));
+    await tester.tap(find.text('Validasi Input'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Kata sandi harus memiliki minimal 8 karakter, huruf besar, angka, dan simbol.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('Login simulasi dan konfirmasi logout', (tester) async {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
